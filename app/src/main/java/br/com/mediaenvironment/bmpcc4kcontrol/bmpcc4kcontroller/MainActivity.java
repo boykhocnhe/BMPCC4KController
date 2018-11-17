@@ -125,7 +125,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
             if (action.equals(BluetoothDevice.ACTION_FOUND)){
                 BluetoothDevice device = intent.getParcelableExtra (BluetoothDevice.EXTRA_DEVICE);
-                mBTDevices.add(device);
+
+                if (!mBTDevices.contains(device)){
+                    mBTDevices.add(device);
+                    Log.d(TAG,"NEW DEVICE ADDED: " + device.getName());
+                } else {
+                    Log.d(TAG,"DEVICE ALREADY ON THE LIST: " + device.getName());
+
+                    //LEMBRAR DE REMOVER O QUE NÃO ESTÁ MAIS ACESSÍVEL
+                }
+
                 Log.d(TAG, "onReceive: " + device.getName() + ": " + device.getAddress());
 
                 mDeviceListAdapter = new DeviceListAdapter(context, R.layout.device_adapter_view, mBTDevices);
@@ -386,42 +395,41 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
 
-        if (adapterView.getId() == R.id.lv_pairedDevices){
-            Log.d(TAG, "adapter view id " + adapterView.getId());
-            Log.d(TAG, "R ID " + R.id.lv_pairedDevices);
-
-        }
-
         //first cancel discovery because its very memory intensive.
-//        mBTAdapter.cancelDiscovery();
+        mBTAdapter.cancelDiscovery();
 
         Log.d(TAG, "onItemClick: You Clicked on a device. ");
 
+        //Unpair device IF it's on paired list
+        if (adapterView.getId() == R.id.lv_pairedDevices){
+            Log.d(TAG, "adapter view id " + adapterView.getId());
+            Log.d(TAG, "BONDED - Bond State: " + mPairedDevices.get(i).getBondState());
 
-//        String deviceName = mBTDevices.get(i).getName();
-//        String deviceAddress = mBTDevices.get(i).getAddress();
-//
-//        Log.d(TAG, "onItemClick: deviceName = " + deviceName);
-//        Log.d(TAG, "onItemClick: deviceAddress = " + deviceAddress);
+            unpairDevice(mPairedDevices.get(i));
+        } else {
+            Log.d(TAG, "adapter view id " + adapterView.getId());
 
-        //create the bond.
-        //NOTE: Requires API 17+? I think this is JellyBean
-        if(Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR2){
-            Log.d(TAG, "Trying to pair with " + deviceName);
+            String deviceName = mBTDevices.get(i).getName();
+            String deviceAddress = mBTDevices.get(i).getAddress();
 
-            if(mBTDevices.get(i).getBondState() == BluetoothDevice.BOND_BONDED){
-                Log.d(TAG, "BONDED - Bond State: " + mBTDevices.get(i).getBondState());
+            Log.d(TAG, "onItemClick: deviceName = " + deviceName);
+            Log.d(TAG, "onItemClick: deviceAddress = " + deviceAddress);
 
-                //Unbond device before bond again
-                unpairDevice(mBTDevices.get(i));
-            } else {
-                Log.d(TAG, "NOT BONDED - Bond State: " + mBTDevices.get(i).getBondState());
+            //create the bond.
+            //NOTE: Requires API 17+? I think this is JellyBean
+            if(Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN_MR2){
+                Log.d(TAG, "Trying to pair with " + deviceName);
 
-                //Create a bond with the device
-                mBTDevices.get(i).createBond();
+                if(mBTDevices.get(i).getBondState() != BluetoothDevice.BOND_BONDED){
+                    Log.d(TAG, "NOT BONDED - Bond State: " + mBTDevices.get(i).getBondState());
+
+                    //Create a bond with the device
+                    mBTDevices.get(i).createBond();
+
+                    Log.d(TAG, "BOND CREATED ON: " + deviceName);
+                    Log.d(TAG, "BOND CREATED - Bond State: " + mBTDevices.get(i).getBondState());
+                }
             }
-
-//            mBTDevices.get(i).createBond();
         }
     }
 
